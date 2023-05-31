@@ -24,14 +24,38 @@
   	`conda list`  <!-- check the environment -->
     > Then, you can double check some key packages used for stable diffusion as below
     ```
-    diffusers                 0.15.1                   pypi_0    pypi
-    olive-ai                  0.1.0                    pypi_0    pypi
+    diffusers                 0.16.1                   pypi_0    pypi
+    olive-ai                  0.2.1                    pypi_0    pypi
     onnx                      1.13.1                   pypi_0    pypi
     onnxruntime-directml      1.15.0                   pypi_0    psypi
     ```
     
 6.	Go to the folder where has `test_dml.py`, and run the script  
 `python test_dml.py`
-    > Note, please point out the path where sd model is located in the scirpt before testing.
+    > Note, please point out the path where sd model is located in the command before testing.
+```
+usage: test_dml.py [-h] [--model_dir MODEL_DIR] [--latents_path LATENTS_PATH] [--prompt PROMPT]
+                   [--num_images NUM_IMAGES] [--batch_size BATCH_SIZE] [--num_inference_steps NUM_INFERENCE_STEPS]
+                   [--dynamic_dims] [--enable_profiling] [--enable_intermediate_model]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --model_dir MODEL_DIR
+                        folder of stable diffusion
+  --latents_path LATENTS_PATH
+                        file of latents
+  --prompt PROMPT       prompt
+  --num_images NUM_IMAGES
+                        Number of images to generate
+  --batch_size BATCH_SIZE
+                        Number of images to generate per batch
+  --num_inference_steps NUM_INFERENCE_STEPS
+                        Number of steps in diffusion process
+  --dynamic_dims        Disable static shape optimization
+  --enable_profiling    To save onnx profiling file
+  --enable_intermediate_model
+                        To save intermediate graph optimized by onnxruntime
+```
+
 
 
