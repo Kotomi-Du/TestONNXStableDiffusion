@@ -440,7 +440,10 @@ class OVStableDiffusionPipeline(DiffusionPipeline):
 
         # scale and decode the image latents with vae
         #latents = 1 / 0.18215 * latents    # community moved the 0.18215 into vae decoder forward code
+        start_time = time.time()
         image_output = self.vae_decoder(latents)[self._vae_d_output]
+        end_time = time.time()
+        print("decoder:{:.2f}s".format(end_time - start_time))
         image_output = self.postprocess_image(image_output, meta, output_type)
 
         return {"sample": image_output, 'iterations': img_buffer}
