@@ -633,10 +633,10 @@ def compileModel(xpu, model_dir, disable_cache):
             if not os.path.exists(cache_dir):
                  os.makedirs(cache_dir)
             core.set_property({'CACHE_DIR': cache_dir})
-        text_enc = core.compile_model(Path(model_dir + '/text_encoder/text_encoder.xml'), xpu)
-        unet_model = core.compile_model(Path(model_dir + '/unet/unet.xml'), xpu)
-        vae_encoder = core.compile_model(Path(model_dir + '/vae_encoder/vae_encoder.xml'), xpu)
-        vae_decoder = core.compile_model(Path(model_dir + '/vae_decoder/vae_decoder.xml'), xpu)
+        text_enc = core.compile_model(Path(model_dir + '/text_encoder.xml'), xpu)
+        unet_model = core.compile_model(Path(model_dir + '/unet.xml'), xpu)
+        vae_encoder = core.compile_model(Path(model_dir + '/vae_encoder.xml'), xpu)
+        vae_decoder = core.compile_model(Path(model_dir + '/vae_decoder.xml'), xpu)
         
         '''
         scheduler = LMSDiscreteScheduler(
@@ -649,12 +649,12 @@ def compileModel(xpu, model_dir, disable_cache):
 
         try:
             #scheduler = LMSDiscreteScheduler.from_pretrained(REPO, subfolder="scheduler")
-            scheduler = EulerAncestralDiscreteScheduler.from_pretrained(REPO, subfolder="scheduler")
-            tokenizer = CLIPTokenizer.from_pretrained(REPO, subfolder="tokenizer")
+            scheduler = EulerAncestralDiscreteScheduler.from_pretrained(model_dir, subfolder="scheduler")
+            tokenizer = CLIPTokenizer.from_pretrained(model_dir, subfolder="tokenizer")
         except:
             #scheduler = LMSDiscreteScheduler.from_pretrained('ovModels', subfolder="scheduler")
-            scheduler = EulerAncestralDiscreteScheduler.from_pretrained('ovModels', subfolder="scheduler")
-            tokenizer = CLIPTokenizer.from_pretrained('ovModels', subfolder="tokenizer")              
+            scheduler = EulerAncestralDiscreteScheduler.from_pretrained(model_dir, subfolder="scheduler")
+            tokenizer = CLIPTokenizer.from_pretrained(model_dir, subfolder="tokenizer")              
 
         ov_pipe = OVStableDiffusionPipeline(
             tokenizer=tokenizer,
