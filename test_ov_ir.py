@@ -20,15 +20,8 @@ import time
 from typing import List, Optional, Union, Dict
 import PIL
 import cv2
+import argparse
 
-TEXT_ENCODER_ONNX_PATH = Path('ovTempModels/text_encoder.onnx')
-TEXT_ENCODER_OV_PATH = Path('ovModels/text_encoder.xml')
-UNET_ONNX_PATH = Path('ovTempModels/unet.onnx')
-UNET_OV_PATH = Path('ovModels/unet.xml')
-VAE_ENCODER_ONNX_PATH = Path('ovTempModels/vae_encoder.onnx')
-VAE_ENCODER_OV_PATH = Path('ovModels/vae_encoder.xml')
-VAE_DECODER_ONNX_PATH = Path('ovTempModels/vae_decoder.onnx')
-VAE_DECODER_OV_PATH = Path('ovModels/vae_decoder.xml')
 
 # ### Text Encoder
 # 
@@ -343,6 +336,8 @@ class OVStableDiffusionPipeline(DiffusionPipeline):
         # corresponds to doing no classifier free guidance.
         do_classifier_free_guidance = guidance_scale > 1.0
         # get unconditional embeddings for classifier free guidance
+        import time
+        start_time = time.time()
         if do_classifier_free_guidance:
             max_length = text_input.input_ids.shape[-1]
             uncond_input = self.tokenizer(
@@ -354,7 +349,8 @@ class OVStableDiffusionPipeline(DiffusionPipeline):
             # Here we concatenate the unconditional and text embeddings into a single batch
             # to avoid doing two forward passes
             text_embeddings = np.concatenate([uncond_embeddings, text_embeddings])
-
+        end_time = time.time()
+        print("CLIP:{:.2f}s".format(end_time-start_time))
         # set timesteps
         accepts_offset = "offset" in set(inspect.signature(self.scheduler.set_timesteps).parameters.keys())
         extra_set_kwargs = {}
@@ -602,13 +598,6 @@ def validateTitle(title):
     rstr = r"[\/\\\:\*\?\"\<\>\|.]"
     return re.sub(rstr, r"", title)
 
-# ### EXPORT
-#
-#REPO = "darkstorm2150/Protogen_v5.3_Official_Release"
-REPO = "windwhinny/chilloutmix"
-#REPO = "compvis/stable-diffusion-v1-4"
-#REPO = "runwayml/stable-diffusion-v1-5"
-
 def downloadModel():
     if not TEXT_ENCODER_OV_PATH.exists() or not UNET_OV_PATH.exists() or not VAE_DECODER_OV_PATH.exists():
         if not os.path.exists('ovTempModels'):
@@ -632,13 +621,19 @@ def downloadModel():
         del vae
 
     
-def compileModel(xpu):
+def compileModel(xpu, model_dir, disable_cache):
     if 'CPU' in xpu or 'GPU' in xpu or 'AUTO' in xpu:
         core = Core()
-        text_enc = core.compile_model(TEXT_ENCODER_OV_PATH, xpu)
-        unet_model = core.compile_model(UNET_OV_PATH, xpu)
-        vae_encoder = core.compile_model(VAE_ENCODER_OV_PATH, xpu)
-        vae_decoder = core.compile_model(VAE_DECODER_OV_PATH, xpu)
+        
+        if not disable_cache:
+            cache_dir = 'gpu_cache'
+            if not os.path.exists(cache_dir):
+                 os.makedirs(cache_dir)
+            core.set_property({'CACHE_DIR': cache_dir})
+        text_enc = core.compile_model(Path(model_dir + '/text_encoder/text_encoder.xml'), xpu)
+        unet_model = core.compile_model(Path(model_dir + '/unet/unet.xml'), xpu)
+        vae_encoder = core.compile_model(Path(model_dir + '/vae_encoder/vae_encoder.xml'), xpu)
+        vae_decoder = core.compile_model(Path(model_dir + '/vae_decoder/vae_decoder.xml'), xpu)
         
         '''
         scheduler = LMSDiscreteScheduler(
@@ -688,6 +683,22 @@ def generateImage(xpu, ov_pipe, prompt='horse', negative='', seed=0, steps=20, i
     str_image = validateTitle(str(prompt))[:100] + '_seed_' + str(seed) + '_step_' + str(steps)+'_time_'+str(int(time.time()))
 
     final_image = result['sample'][0]
-    final_image.save('output/' + str(str_image)+'.png')
+    final_image.save(str(str_image)+'.png')
     
-    return 'output/' + str(str_image)+'.png'
+    return  str(str_image)+'.png'
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model_dir", default = r"C:\Users\GAME\Documents\Project\AIGC\sd1.5_ov2022.3", type = str, help="folder of stable diffusion")
+    parser.add_argument("--disable_gpu_cache",action="store_true", help="to save gpu compiled kernel in cache folder")
+    parser.add_argument("--device",default = "GPU", type = str, help="to save gpu compiled kernel in cache folder")
+    
+    args = parser.parse_args()
+    start_time = time.time()
+    ov_pipe = compileModel(args.device, args.model_dir, args.disable_gpu_cache)
+    stage1_time = time.time()
+    image_name = generateImage(args.device, ov_pipe)
+    stage2_time = time.time()
+    print("Image generated: {}".format(image_name))
+    print("Initialized Time: {:.2f}s".format(stage1_time - start_time))
+    print("End to End Inference Time:{:.2f}s:".format(stage2_time - stage1_time))
