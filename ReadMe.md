@@ -57,5 +57,13 @@ optional arguments:
                         To save intermediate graph optimized by onnxruntime
 ```
 
+7. local env table
+
+    | env Name    | Details | 
+    |---------|-----|
+    |sdov| openvino 2022.3|
+    |onnxov|openvino 2023.0|
+
+
 
 
